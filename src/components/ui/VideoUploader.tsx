@@ -20,6 +20,7 @@ const VideoUploader: React.FC<VideoUploaderProps> = ({ onSuccess }) => {
   const [tags, setTags] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -55,16 +56,17 @@ const VideoUploader: React.FC<VideoUploaderProps> = ({ onSuccess }) => {
     
     try {
       setIsUploading(true);
+      setUploadProgress(0);
       
-      // In a real app, we would upload the file to a server
-      // For demo purposes, we're just simulating the upload
-      await api.uploadVideo({
-        title,
-        movieName,
-        tags: tags.split(",").map(tag => tag.trim()),
-        filePath: preview || "",
-        thumbnailPath: "https://images.unsplash.com/photo-1581090464777-f3220bbe1b8b?w=400&h=250&fit=crop",
-      });
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('video', file);
+      formData.append('title', title);
+      formData.append('movieName', movieName);
+      formData.append('tags', tags);
+      
+      // Upload to the backend
+      const response = await api.uploadVideo(formData);
       
       toast({
         title: "Success",
@@ -77,6 +79,7 @@ const VideoUploader: React.FC<VideoUploaderProps> = ({ onSuccess }) => {
       setTags("");
       setFile(null);
       setPreview(null);
+      setUploadProgress(0);
       
       // Call success callback
       if (onSuccess) {
@@ -175,6 +178,15 @@ const VideoUploader: React.FC<VideoUploaderProps> = ({ onSuccess }) => {
           </div>
         </div>
       </div>
+      
+      {isUploading && uploadProgress > 0 && (
+        <div className="w-full bg-secondary h-2 rounded-full overflow-hidden">
+          <div 
+            className="bg-meme-primary h-full transition-all duration-300 ease-in-out"
+            style={{ width: `${uploadProgress}%` }}
+          />
+        </div>
+      )}
       
       <Button
         type="submit"
