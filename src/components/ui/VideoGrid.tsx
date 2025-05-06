@@ -9,7 +9,7 @@ interface VideoGridProps {
 }
 
 const VideoGrid: React.FC<VideoGridProps> = ({ videos, emptyMessage = "No videos found" }) => {
-  if (videos.length === 0) {
+  if (!videos || videos.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16">
         <p className="text-xl text-muted-foreground">{emptyMessage}</p>

@@ -31,9 +31,11 @@ const VideoDetail = () => {
       
       try {
         setLoading(true);
+        console.log("Fetching video with ID:", id); // Added for debugging
         const videoData = await api.getVideoById(id);
         
         if (videoData) {
+          console.log("Video data received:", videoData); // Added for debugging
           setVideo(videoData);
           
           // Get related videos (with the same tags or movie)
@@ -49,11 +51,13 @@ const VideoDetail = () => {
           setRelatedVideos(related);
         } else {
           // Video not found in API or mock data
+          console.error("Video not found for ID:", id); // Added for debugging
           toast({
             title: "Video not found",
             description: "The requested video could not be found",
             variant: "destructive",
           });
+          navigate('/');
         }
       } catch (error) {
         console.error("Error fetching video:", error);
@@ -62,6 +66,7 @@ const VideoDetail = () => {
           description: "Failed to load the video",
           variant: "destructive",
         });
+        navigate('/');
       } finally {
         setLoading(false);
       }

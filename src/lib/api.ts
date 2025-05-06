@@ -41,7 +41,7 @@ export const api = {
       const response = await apiClient.get(`/videos/${id}`);
       return response.data;
     } catch (error) {
-      console.error('Error fetching video by ID from API, using mock data:', error);
+      console.error(`Error fetching video ID: ${id} from API, using mock data:`, error);
       await new Promise(resolve => setTimeout(resolve, 300));
       // Fall back to mock data
       return import("@/data/mockData").then(module => 

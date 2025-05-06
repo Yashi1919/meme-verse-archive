@@ -8,6 +8,10 @@ interface VideoCardProps {
 }
 
 const VideoCard: React.FC<VideoCardProps> = ({ video }) => {
+  if (!video || !video.id) {
+    return null; // Don't render cards without valid IDs
+  }
+  
   const { id, title, thumbnailPath, tags, movieName } = video;
   
   return (
