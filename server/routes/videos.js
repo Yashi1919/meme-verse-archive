@@ -7,6 +7,7 @@ const fs = require('fs');
 const Video = require('../models/Video');
 const { promisify } = require('util');
 const unlinkAsync = promisify(fs.unlink);
+const mongoose = require('mongoose');
 
 // Configure multer for video uploads
 const storage = multer.diskStorage({
@@ -72,7 +73,14 @@ router.get('/search', async (req, res) => {
 // GET a specific video
 router.get('/:id', async (req, res) => {
   try {
-    const video = await Video.findById(req.params.id);
+    const id = req.params.id;
+    
+    // Check if ID is valid before querying
+    if (!id || id === 'undefined' || !mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(404).json({ message: 'Invalid video ID' });
+    }
+    
+    const video = await Video.findById(id);
     if (!video) {
       return res.status(404).json({ message: 'Video not found' });
     }

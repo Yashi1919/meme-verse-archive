@@ -31,6 +31,12 @@ export const api = {
   
   // Get video by ID
   getVideoById: async (id: string): Promise<VideoData | undefined> => {
+    // Validate ID before making the request
+    if (!id || id === 'undefined') {
+      console.error('Invalid video ID');
+      return undefined;
+    }
+    
     try {
       const response = await apiClient.get(`/videos/${id}`);
       return response.data;
