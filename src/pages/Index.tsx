@@ -1,27 +1,39 @@
 
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import VideoGrid from "@/components/ui/VideoGrid";
 import SearchBar from "@/components/ui/SearchBar";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { api } from "@/lib/api";
 import { popularTags, popularMovies } from "@/data/mockData";
+import { VideoData } from "@/data/mockData";
+import { Loader } from "lucide-react";
 
 const Index = () => {
-  const [featuredVideos, setFeaturedVideos] = useState([]);
+  const [featuredVideos, setFeaturedVideos] = useState<VideoData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
   useEffect(() => {
     const fetchVideos = async () => {
       try {
+        setLoading(true);
+        console.log("Fetching videos for featured section");
         const videos = await api.getVideos();
-        setFeaturedVideos(videos);
+        console.log("Fetched videos:", videos);
+        
+        // Make sure we have an array of valid videos
+        if (Array.isArray(videos) && videos.length > 0) {
+          setFeaturedVideos(videos);
+        } else {
+          console.warn("No videos returned from API");
+          setError("No videos available");
+        }
       } catch (error) {
         console.error("Error fetching videos:", error);
+        setError("Failed to load videos");
       } finally {
         setLoading(false);
       }
@@ -84,10 +96,15 @@ const Index = () => {
           
           {loading ? (
             <div className="py-12 flex justify-center">
-              <p className="text-muted-foreground">Loading memes...</p>
+              <Loader className="h-8 w-8 animate-spin mx-auto mb-4" />
+              <p className="text-muted-foreground ml-2">Loading memes...</p>
+            </div>
+          ) : error ? (
+            <div className="py-12 text-center">
+              <p className="text-muted-foreground">{error}</p>
             </div>
           ) : (
-            <VideoGrid videos={featuredVideos.slice(0, 4)} />
+            <VideoGrid videos={featuredVideos.slice(0, 4)} emptyMessage="No featured memes available" />
           )}
         </div>
         

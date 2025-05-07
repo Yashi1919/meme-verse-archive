@@ -23,14 +23,20 @@ export const api = {
   // Get all videos
   getVideos: async (): Promise<VideoData[]> => {
     try {
+      console.log('Attempting to fetch videos from API');
       const response = await apiClient.get('/videos');
+      console.log('API response:', response.data);
       return response.data;
     } catch (error) {
       console.error('Error fetching videos from API, using mock data:', error);
       // Simulate network delay for mock data
       await new Promise(resolve => setTimeout(resolve, 500));
       // Fall back to mock data if the API call fails
-      return import("@/data/mockData").then(module => module.mockVideos);
+      console.log('Falling back to mock data');
+      return import("@/data/mockData").then(module => {
+        console.log('Mock data videos count:', module.mockVideos.length);
+        return module.mockVideos;
+      });
     }
   },
   
@@ -45,6 +51,7 @@ export const api = {
     try {
       console.log(`Fetching video with ID: ${id}`);
       const response = await apiClient.get(`/videos/${id}`);
+      console.log('API response for video:', response.data);
       return response.data;
     } catch (error) {
       console.error(`Error fetching video ID: ${id} from API, using mock data:`, error);
