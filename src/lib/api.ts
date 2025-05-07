@@ -12,6 +12,11 @@ const apiClient = axios.create({
   }
 });
 
+// Helper to validate IDs
+const isValidId = (id: string | undefined): boolean => {
+  return !!id && id !== 'undefined' && id.length > 0;
+};
+
 // This is a hybrid API that can work with both mock data and real backend
 // It will use the backend if available, otherwise fall back to mock data
 export const api = {
@@ -30,30 +35,37 @@ export const api = {
   },
   
   // Get video by ID
-  getVideoById: async (id: string): Promise<VideoData | undefined> => {
+  getVideoById: async (id: string | undefined): Promise<VideoData | undefined> => {
     // Validate ID before making the request
-    if (!id || id === 'undefined') {
-      console.error('Invalid video ID');
+    if (!isValidId(id)) {
+      console.error('Invalid video ID:', id);
       return undefined;
     }
     
     try {
+      console.log(`Fetching video with ID: ${id}`);
       const response = await apiClient.get(`/videos/${id}`);
       return response.data;
     } catch (error) {
       console.error(`Error fetching video ID: ${id} from API, using mock data:`, error);
       await new Promise(resolve => setTimeout(resolve, 300));
       // Fall back to mock data
-      return import("@/data/mockData").then(module => 
-        module.mockVideos.find(video => video.id === id)
-      );
+      return import("@/data/mockData").then(module => {
+        const video = module.mockVideos.find(v => v.id === id);
+        console.log(`Mock data search result for ID ${id}:`, video ? 'found' : 'not found');
+        return video;
+      });
     }
   },
   
   // Search videos by query
   searchVideos: async (query: string): Promise<VideoData[]> => {
+    if (!query || query.trim().length === 0) {
+      return api.getVideos(); // Return all videos if query is empty
+    }
+    
     try {
-      const response = await apiClient.get(`/videos/search?q=${query}`);
+      const response = await apiClient.get(`/videos/search?q=${encodeURIComponent(query)}`);
       return response.data;
     } catch (error) {
       console.error('Error searching videos from API, using mock data:', error);
@@ -73,6 +85,17 @@ export const api = {
   // Upload a video
   uploadVideo: async (videoData: FormData): Promise<VideoData> => {
     try {
+      // Ensure the FormData contains required fields
+      if (!videoData.get('title')) {
+        throw new Error('Title is required');
+      }
+      if (!videoData.get('tags')) {
+        throw new Error('Tags are required');
+      }
+      if (!videoData.get('video')) {
+        throw new Error('Video file is required');
+      }
+      
       const response = await apiClient.post('/videos/upload', videoData, {
         headers: {
           'Content-Type': 'multipart/form-data'

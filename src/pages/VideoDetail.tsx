@@ -8,34 +8,42 @@ import Footer from "@/components/layout/Footer";
 import VideoPlayer from "@/components/ui/VideoPlayer";
 import VideoGrid from "@/components/ui/VideoGrid";
 import { toast } from "@/components/ui/use-toast";
+import { Loader } from "lucide-react";
 
 const VideoDetail = () => {
   const { id } = useParams<{ id: string }>();
   const [video, setVideo] = useState<VideoData | null>(null);
   const [relatedVideos, setRelatedVideos] = useState<VideoData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   
   useEffect(() => {
     const fetchVideo = async () => {
+      // Reset state when ID changes
+      setVideo(null);
+      setRelatedVideos([]);
+      setError(null);
+      setLoading(true);
+      
       // Validate ID
       if (!id || id === 'undefined') {
+        setError("Invalid video ID");
         toast({
           title: "Error",
           description: "Invalid video ID",
           variant: "destructive",
         });
-        navigate('/');
+        setLoading(false);
         return;
       }
       
       try {
-        setLoading(true);
-        console.log("Fetching video with ID:", id); // Added for debugging
+        console.log("Fetching video with ID:", id);
         const videoData = await api.getVideoById(id);
         
         if (videoData) {
-          console.log("Video data received:", videoData); // Added for debugging
+          console.log("Video data received:", videoData);
           setVideo(videoData);
           
           // Get related videos (with the same tags or movie)
@@ -50,23 +58,22 @@ const VideoDetail = () => {
           
           setRelatedVideos(related);
         } else {
-          // Video not found in API or mock data
-          console.error("Video not found for ID:", id); // Added for debugging
+          console.error("Video not found for ID:", id);
+          setError("Video not found");
           toast({
             title: "Video not found",
             description: "The requested video could not be found",
             variant: "destructive",
           });
-          navigate('/');
         }
       } catch (error) {
         console.error("Error fetching video:", error);
+        setError("Failed to load video");
         toast({
           title: "Error",
           description: "Failed to load the video",
           variant: "destructive",
         });
-        navigate('/');
       } finally {
         setLoading(false);
       }
@@ -80,6 +87,7 @@ const VideoDetail = () => {
       <>
         <Navbar />
         <div className="container mx-auto px-4 py-16 text-center">
+          <Loader className="h-8 w-8 animate-spin mx-auto mb-4" />
           <p className="text-muted-foreground">Loading video...</p>
         </div>
         <Footer />
@@ -87,7 +95,7 @@ const VideoDetail = () => {
     );
   }
   
-  if (!video) {
+  if (error || !video) {
     return (
       <>
         <Navbar />

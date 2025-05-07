@@ -54,19 +54,36 @@ const VideoUploader: React.FC<VideoUploaderProps> = ({ onSuccess }) => {
       return;
     }
     
+    if (!tags) {
+      toast({
+        title: "Error",
+        description: "Please enter at least one tag for your meme",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     try {
       setIsUploading(true);
-      setUploadProgress(0);
+      setUploadProgress(10); // Start progress indicator
       
       // Create FormData for file upload
       const formData = new FormData();
       formData.append('video', file);
       formData.append('title', title);
-      formData.append('movieName', movieName);
+      formData.append('movieName', movieName || 'Unknown');
       formData.append('tags', tags);
+      
+      // Simulate upload progress
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => Math.min(prev + 10, 90));
+      }, 500);
       
       // Upload to the backend
       const response = await api.uploadVideo(formData);
+      
+      clearInterval(progressInterval);
+      setUploadProgress(100);
       
       toast({
         title: "Success",
@@ -174,12 +191,13 @@ const VideoUploader: React.FC<VideoUploaderProps> = ({ onSuccess }) => {
               onChange={e => setTags(e.target.value)}
               placeholder="funny, action, classic"
               rows={2}
+              required
             />
           </div>
         </div>
       </div>
       
-      {isUploading && uploadProgress > 0 && (
+      {isUploading && (
         <div className="w-full bg-secondary h-2 rounded-full overflow-hidden">
           <div 
             className="bg-meme-primary h-full transition-all duration-300 ease-in-out"
