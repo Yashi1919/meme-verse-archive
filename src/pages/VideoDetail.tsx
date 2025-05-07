@@ -48,8 +48,9 @@ const VideoDetail = () => {
           
           // Get related videos (with the same tags or movie)
           const allVideos = await api.getVideos();
+          // Make sure we're looking for videos with the same tags or movie
           const related = allVideos
-            .filter(v => v.id !== id) // Exclude current video
+            .filter(v => (v._id || v.id) !== id) // Exclude current video using _id or id
             .filter(v => 
               v.movieName === videoData.movieName || 
               v.tags.some(tag => videoData.tags.includes(tag))

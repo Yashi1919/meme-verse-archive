@@ -20,7 +20,8 @@ const VideoGrid: React.FC<VideoGridProps> = ({ videos, emptyMessage = "No videos
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
       {videos.map((video) => (
-        <VideoCard key={video.id} video={video} />
+        // Use _id as key since that's what's coming from the API
+        <VideoCard key={video._id || video.id} video={video} />
       ))}
     </div>
   );

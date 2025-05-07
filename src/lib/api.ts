@@ -26,7 +26,14 @@ export const api = {
       console.log('Attempting to fetch videos from API');
       const response = await apiClient.get('/videos');
       console.log('API response:', response.data);
-      return response.data;
+      
+      // Map MongoDB _id to id for consistent handling in the frontend
+      const videos = response.data.map((video: any) => ({
+        ...video,
+        id: video._id // Add id property based on _id for consistent handling
+      }));
+      
+      return videos;
     } catch (error) {
       console.error('Error fetching videos from API, using mock data:', error);
       // Simulate network delay for mock data
@@ -52,7 +59,14 @@ export const api = {
       console.log(`Fetching video with ID: ${id}`);
       const response = await apiClient.get(`/videos/${id}`);
       console.log('API response for video:', response.data);
-      return response.data;
+      
+      // Add id property based on _id for consistent handling
+      const video = {
+        ...response.data,
+        id: response.data._id
+      };
+      
+      return video;
     } catch (error) {
       console.error(`Error fetching video ID: ${id} from API, using mock data:`, error);
       await new Promise(resolve => setTimeout(resolve, 300));
@@ -73,7 +87,14 @@ export const api = {
     
     try {
       const response = await apiClient.get(`/videos/search?q=${encodeURIComponent(query)}`);
-      return response.data;
+      
+      // Map MongoDB _id to id for consistent handling
+      const videos = response.data.map((video: any) => ({
+        ...video,
+        id: video._id // Add id property based on _id for consistent handling
+      }));
+      
+      return videos;
     } catch (error) {
       console.error('Error searching videos from API, using mock data:', error);
       await new Promise(resolve => setTimeout(resolve, 300));

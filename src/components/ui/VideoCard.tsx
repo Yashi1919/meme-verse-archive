@@ -8,14 +8,16 @@ interface VideoCardProps {
 }
 
 const VideoCard: React.FC<VideoCardProps> = ({ video }) => {
-  if (!video || !video.id) {
+  // Check for valid video and ID (supporting both _id from API and id from mock data)
+  if (!video || (!video.id && !video._id)) {
     return null; // Don't render cards without valid IDs
   }
   
-  const { id, title, thumbnailPath, tags, movieName } = video;
+  const videoId = video._id || video.id; // Use _id from API or fallback to id from mock data
+  const { title, thumbnailPath, tags, movieName } = video;
   
   return (
-    <Link to={`/video/${id}`} className="block">
+    <Link to={`/video/${videoId}`} className="block">
       <div className="rounded-lg overflow-hidden bg-card border border-border video-card-transition hover:border-meme-primary">
         <div className="aspect-video relative overflow-hidden bg-muted">
           <img 
@@ -39,7 +41,7 @@ const VideoCard: React.FC<VideoCardProps> = ({ video }) => {
           <div className="flex flex-wrap gap-1 mt-2">
             {tags && tags.slice(0, 3).map((tag) => (
               <span 
-                key={`${id}-${tag}`}
+                key={`${videoId}-${tag}`}
                 className="inline-block text-xs px-2 py-0.5 bg-secondary rounded-full text-muted-foreground"
               >
                 #{tag}
