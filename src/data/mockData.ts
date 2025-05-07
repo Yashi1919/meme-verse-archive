@@ -1,6 +1,7 @@
 
 export interface VideoData {
-  id: string;
+  id?: string;
+  _id?: string;
   title: string;
   filePath: string;
   thumbnailPath: string;
