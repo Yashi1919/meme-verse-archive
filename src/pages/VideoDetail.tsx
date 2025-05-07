@@ -122,7 +122,7 @@ const VideoDetail = () => {
       <Navbar />
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto mb-12">
-          <VideoPlayer video={video} />
+          {video && <VideoPlayer video={video} />}
         </div>
         
         {relatedVideos.length > 0 && (

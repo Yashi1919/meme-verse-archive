@@ -17,6 +17,19 @@ const isValidId = (id: string | undefined): boolean => {
   return !!id && id !== 'undefined' && id.length > 0;
 };
 
+// Helper to sanitize URLs for video playback
+const sanitizeVideoUrl = (url: string): string => {
+  // Make sure URL is properly formatted
+  if (!url) return '';
+  
+  // Ensure URL is absolute
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    // If it's a relative URL, make it absolute
+    return `${API_URL}/${url.replace(/^\//, '')}`;
+  }
+  return url;
+};
+
 // This is a hybrid API that can work with both mock data and real backend
 // It will use the backend if available, otherwise fall back to mock data
 export const api = {
@@ -30,7 +43,8 @@ export const api = {
       // Map MongoDB _id to id for consistent handling in the frontend
       const videos = response.data.map((video: any) => ({
         ...video,
-        id: video._id // Add id property based on _id for consistent handling
+        id: video._id, // Add id property based on _id for consistent handling
+        filePath: sanitizeVideoUrl(video.filePath) // Ensure video URL is properly formatted
       }));
       
       return videos;
@@ -63,7 +77,8 @@ export const api = {
       // Add id property based on _id for consistent handling
       const video = {
         ...response.data,
-        id: response.data._id
+        id: response.data._id,
+        filePath: sanitizeVideoUrl(response.data.filePath) // Ensure video URL is properly formatted
       };
       
       return video;
@@ -91,7 +106,8 @@ export const api = {
       // Map MongoDB _id to id for consistent handling
       const videos = response.data.map((video: any) => ({
         ...video,
-        id: video._id // Add id property based on _id for consistent handling
+        id: video._id, // Add id property based on _id for consistent handling
+        filePath: sanitizeVideoUrl(video.filePath) // Ensure video URL is properly formatted
       }));
       
       return videos;
@@ -129,7 +145,14 @@ export const api = {
           'Content-Type': 'multipart/form-data'
         }
       });
-      return response.data;
+      
+      // Ensure the video URL is properly formatted
+      const uploadedVideo = {
+        ...response.data,
+        filePath: sanitizeVideoUrl(response.data.filePath)
+      };
+      
+      return uploadedVideo;
     } catch (error) {
       console.error('Error uploading video to API:', error);
       throw error;
