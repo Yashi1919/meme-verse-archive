@@ -22,12 +22,20 @@ const sanitizeVideoUrl = (url: string): string => {
   // Make sure URL is properly formatted
   if (!url) return '';
   
-  // Ensure URL is absolute
-  if (!url.startsWith('http://') && !url.startsWith('https://')) {
-    // If it's a relative URL, make it absolute
-    return `${API_URL}/${url.replace(/^\//, '')}`;
+  // Log the original URL for debugging
+  console.log(`Sanitizing URL: ${url}`);
+  
+  // Check if URL is already absolute (has protocol)
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    console.log(`URL is already absolute: ${url}`);
+    return url;
   }
-  return url;
+  
+  // If it's a relative URL, make it absolute
+  // Make sure to remove any leading slashes
+  const sanitized = `${API_URL.replace(/\/api$/, '')}/${url.replace(/^\//, '')}`;
+  console.log(`Sanitized URL: ${sanitized}`);
+  return sanitized;
 };
 
 // This is a hybrid API that can work with both mock data and real backend
@@ -146,12 +154,16 @@ export const api = {
         }
       });
       
+      console.log("Upload response:", response.data);
+      
       // Ensure the video URL is properly formatted
       const uploadedVideo = {
         ...response.data,
+        id: response.data._id, // Ensure id is set
         filePath: sanitizeVideoUrl(response.data.filePath)
       };
       
+      console.log("Processed uploaded video:", uploadedVideo);
       return uploadedVideo;
     } catch (error) {
       console.error('Error uploading video to API:', error);

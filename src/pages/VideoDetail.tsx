@@ -9,6 +9,7 @@ import VideoPlayer from "@/components/ui/VideoPlayer";
 import VideoGrid from "@/components/ui/VideoGrid";
 import { toast } from "@/components/ui/use-toast";
 import { Loader } from "lucide-react";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 const VideoDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -44,6 +45,11 @@ const VideoDetail = () => {
         
         if (videoData) {
           console.log("Video data received:", videoData);
+          // Validate that we have a file path
+          if (!videoData.filePath) {
+            throw new Error("Video has no file path");
+          }
+          
           setVideo(videoData);
           
           // Get related videos (with the same tags or movie)
@@ -122,7 +128,19 @@ const VideoDetail = () => {
       <Navbar />
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto mb-12">
-          {video && <VideoPlayer video={video} />}
+          {video && (
+            <>
+              <VideoPlayer video={video} />
+              {/* Add debugging info for developers - can be removed in production */}
+              <div className="mt-4 p-2 border border-muted rounded text-xs text-muted-foreground bg-muted/10">
+                <details>
+                  <summary>Debug Info</summary>
+                  <p>Video ID: {video._id || video.id}</p>
+                  <p>File Path: {video.filePath}</p>
+                </details>
+              </div>
+            </>
+          )}
         </div>
         
         {relatedVideos.length > 0 && (
