@@ -1,178 +1,121 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { VideoData } from "@/data/mockData";
+import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import NavbarEnhanced from "@/components/layout/NavbarEnhanced";
 import FooterEnhanced from "@/components/layout/FooterEnhanced";
-import SearchBar from "@/components/ui/SearchBar";
 import VideoGrid from "@/components/ui/VideoGrid";
-import { popularTags, popularMovies } from "@/data/mockData";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import SearchBar from "@/components/ui/SearchBar";
+import { Button } from "@/components/ui/button";
+import { Search as SearchIcon, Filter, SlidersHorizontal } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const Search = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [videos, setVideos] = useState<VideoData[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<string>("all");
-  
   const query = searchParams.get("q") || "";
-  const tagParam = searchParams.get("tag") || "";
-  const movieParam = searchParams.get("movie") || "";
+  const [searchValue, setSearchValue] = useState(query);
+  const { toast } = useToast();
   
-  const displayQuery = query || tagParam || movieParam || "";
+  const {
+    data: videos,
+    isLoading,
+    error,
+    refetch
+  } = useQuery({
+    queryKey: ["videos", query],
+    queryFn: () => api.searchVideos(query),
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
   
   useEffect(() => {
-    const fetchVideos = async () => {
-      try {
-        setLoading(true);
-        let results: VideoData[] = [];
-        
-        if (query) {
-          results = await api.searchVideos(query);
-          setActiveTab("all");
-        } else if (tagParam) {
-          results = await api.searchVideos(tagParam);
-          setActiveTab("tags");
-        } else if (movieParam) {
-          results = await api.searchVideos(movieParam);
-          setActiveTab("movies");
-        } else {
-          // If no query parameters, return all videos
-          results = await api.getVideos();
-          setActiveTab("all");
-        }
-        
-        setVideos(results);
-      } catch (error) {
-        console.error("Error searching videos:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchVideos();
-  }, [query, tagParam, movieParam]);
+    setSearchValue(query);
+  }, [query]);
   
-  const handleSearch = (newQuery: string) => {
-    setSearchParams({ q: newQuery });
+  const handleSearch = (value: string) => {
+    setSearchParams({ q: value });
   };
   
-  const handleTabChange = (value: string) => {
-    setActiveTab(value);
-    
-    if (value === "tags") {
-      // Clear other parameters and show tags
-      setSearchParams({});
-    } else if (value === "movies") {
-      // Clear other parameters and show movies
-      setSearchParams({});
-    } else {
-      // Clear all parameters
-      setSearchParams({});
-    }
-  };
-  
-  const getSearchDescription = () => {
-    if (query) return `Search results for "${query}"`;
-    if (tagParam) return `Memes tagged with #${tagParam}`;
-    if (movieParam) return `Memes from ${movieName}`;
-    return "Browse all memes";
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    handleSearch(searchValue);
   };
   
   return (
-    <div className="flex flex-col min-h-screen">
+    <>
       <NavbarEnhanced />
-      <div className="container mx-auto px-4 py-8 flex-1">
-        <div className="mb-8">
-          <div className="max-w-2xl mx-auto mb-8">
-            <SearchBar onSearch={handleSearch} initialQuery={displayQuery} />
+      <div className="container mx-auto px-4 py-8 min-h-[calc(100vh-80px)]">
+        <div className="max-w-6xl mx-auto">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold mb-6 text-gradient flex items-center">
+              <SearchIcon className="mr-2 h-8 w-8" />
+              Search Results
+            </h1>
+            
+            <div className="w-full">
+              <form onSubmit={handleSubmit} className="flex items-center gap-2">
+                <SearchBar 
+                  value={searchValue} 
+                  onChange={(e) => setSearchValue(e.target.value)}
+                  onClear={() => setSearchValue("")}
+                  placeholder="Search by title, movie, or tags..." 
+                  className="w-full"
+                />
+                <Button type="submit" className="neo-blur text-white">
+                  <SearchIcon className="h-5 w-5 mr-2" />
+                  Search
+                </Button>
+              </form>
+            </div>
           </div>
           
-          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full mb-8">
-            <TabsList className="w-full max-w-md mx-auto">
-              <TabsTrigger value="all" className="flex-1">All Memes</TabsTrigger>
-              <TabsTrigger value="tags" className="flex-1">Popular Tags</TabsTrigger>
-              <TabsTrigger value="movies" className="flex-1">Movies</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="all" className="mt-6">
-              {/* This will show search results or all videos */}
-            </TabsContent>
-            
-            <TabsContent value="tags" className="mt-6">
-              <div className="flex flex-wrap gap-3 justify-center">
-                {popularTags.slice(0, 20).map((tag) => (
-                  <button
-                    key={tag}
-                    onClick={() => setSearchParams({ tag })}
-                    className={`px-3 py-1.5 rounded-full transition-colors
-                      ${tagParam === tag 
-                        ? "bg-meme-primary text-white" 
-                        : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}
-                  >
-                    #{tag}
-                  </button>
-                ))}
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="movies" className="mt-6">
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                {popularMovies.slice(0, 12).map((movie) => (
-                  <button
-                    key={movie}
-                    onClick={() => setSearchParams({ movie })}
-                    className="bg-card hover:bg-card/80 border border-border rounded-lg p-4 hover:border-meme-primary transition-colors text-left h-full"
-                  >
-                    <h3 className="font-medium">{movie}</h3>
-                  </button>
-                ))}
-              </div>
-            </TabsContent>
-          </Tabs>
-        </div>
-        
-        {(query || tagParam || movieParam) && (
-          <h1 className="text-2xl font-bold mb-6">
-            {getSearchDescription()}
-          </h1>
-        )}
-        
-        {loading ? (
-          <div className="py-16 flex justify-center">
-            <div className="animate-pulse space-y-4">
-              <div className="h-4 w-32 bg-muted rounded"></div>
-              <div className="h-4 w-64 bg-muted rounded"></div>
-            </div>
-          </div>
-        ) : (
-          <VideoGrid 
-            videos={videos} 
-            emptyMessage="No memes found. Try a different search term." 
-          />
-        )}
-        
-        {/* Popular movies section, only show when no results and not on movies tab */}
-        {videos.length === 0 && !loading && activeTab !== "movies" && (
-          <div className="mt-12">
-            <h2 className="text-xl font-bold mb-4">Browse popular movies</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {popularMovies.slice(0, 8).map((movie) => (
-                <button
-                  key={movie}
-                  onClick={() => setSearchParams({ movie })}
-                  className="bg-card border border-border rounded-lg p-4 hover:border-meme-primary transition-colors text-left"
-                >
-                  <h3 className="font-medium">{movie}</h3>
-                </button>
+          {isLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="flex flex-col gap-2">
+                  <Skeleton className="w-full h-48 rounded-lg" />
+                  <Skeleton className="w-3/4 h-6 rounded-md" />
+                  <Skeleton className="w-1/2 h-4 rounded-md" />
+                </div>
               ))}
             </div>
-          </div>
-        )}
+          ) : error ? (
+            <div className="text-center py-16">
+              <p className="text-lg text-muted-foreground mb-4">
+                Error loading search results. Please try again.
+              </p>
+              <Button onClick={() => refetch()} className="neo-blur text-white">
+                Retry
+              </Button>
+            </div>
+          ) : videos && videos.length > 0 ? (
+            <>
+              <p className="text-muted-foreground mb-6">
+                Found {videos.length} results for "{query}"
+              </p>
+              <VideoGrid videos={videos} />
+            </>
+          ) : (
+            <div className="text-center py-16 glass-morphism rounded-lg p-8">
+              <h2 className="text-2xl font-bold mb-4">No results found</h2>
+              <p className="text-muted-foreground mb-8">
+                We couldn't find any memes matching "{query}"
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Button onClick={() => setSearchParams({})} variant="outline" className="neo-blur">
+                  Clear Search
+                </Button>
+                <Button onClick={() => window.location.href = "/"} className="neo-blur text-white">
+                  Back to Home
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
       <FooterEnhanced />
-    </div>
+    </>
   );
 };
 
