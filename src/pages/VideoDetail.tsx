@@ -93,9 +93,11 @@ const VideoDetail = () => {
     return (
       <>
         <Navbar />
-        <div className="container mx-auto px-4 py-16 text-center">
-          <Loader className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading video...</p>
+        <div className="container mx-auto px-4 py-16 min-h-[70vh] flex items-center justify-center">
+          <div className="text-center">
+            <Loader className="h-10 w-10 animate-spin mx-auto mb-6 text-meme-primary" />
+            <p className="text-lg">Loading video...</p>
+          </div>
         </div>
         <Footer />
       </>
@@ -106,17 +108,19 @@ const VideoDetail = () => {
     return (
       <>
         <Navbar />
-        <div className="container mx-auto px-4 py-16 text-center">
-          <h1 className="text-2xl font-bold mb-4">Video not found</h1>
-          <p className="text-muted-foreground mb-8">
-            The meme you're looking for doesn't exist or has been removed.
-          </p>
-          <Link 
-            to="/" 
-            className="text-meme-primary hover:text-meme-secondary underline"
-          >
-            Go back to homepage
-          </Link>
+        <div className="container mx-auto px-4 py-16 min-h-[70vh] flex items-center justify-center">
+          <div className="max-w-md w-full bg-card border border-border rounded-lg p-8 text-center shadow-lg">
+            <h1 className="text-2xl font-bold mb-4">Video not found</h1>
+            <p className="text-muted-foreground mb-8">
+              The meme you're looking for doesn't exist or has been removed.
+            </p>
+            <Link 
+              to="/" 
+              className="inline-block px-6 py-3 rounded-full bg-meme-primary text-white hover:bg-meme-secondary transition-colors"
+            >
+              Go back to homepage
+            </Link>
+          </div>
         </div>
         <Footer />
       </>
@@ -126,26 +130,21 @@ const VideoDetail = () => {
   return (
     <>
       <Navbar />
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 pb-16">
         <div className="max-w-4xl mx-auto mb-12">
           {video && (
             <>
               <VideoPlayer video={video} />
-              {/* Add debugging info for developers - can be removed in production */}
-              <div className="mt-4 p-2 border border-muted rounded text-xs text-muted-foreground bg-muted/10">
-                <details>
-                  <summary>Debug Info</summary>
-                  <p>Video ID: {video._id || video.id}</p>
-                  <p>File Path: {video.filePath}</p>
-                </details>
-              </div>
             </>
           )}
         </div>
         
         {relatedVideos.length > 0 && (
-          <div className="mt-12">
-            <h2 className="text-2xl font-bold mb-6">Related Memes</h2>
+          <div className="mt-16">
+            <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+              <div className="h-6 w-1 bg-meme-primary rounded-full"></div>
+              Related Memes
+            </h2>
             <VideoGrid videos={relatedVideos} />
           </div>
         )}

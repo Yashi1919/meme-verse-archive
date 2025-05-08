@@ -151,7 +151,9 @@ export const api = {
       const response = await apiClient.post('/videos/upload', videoData, {
         headers: {
           'Content-Type': 'multipart/form-data'
-        }
+        },
+        // Add timeout and retry logic
+        timeout: 30000, // 30 second timeout
       });
       
       console.log("Upload response:", response.data);

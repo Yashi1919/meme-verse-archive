@@ -1,9 +1,10 @@
 
 import React, { useRef, useEffect, useState } from "react";
-import { Download, Play, Volume2, VolumeX } from "lucide-react";
+import { Download, Play, Pause, Volume2, VolumeX, Maximize, SkipBack, SkipForward } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { VideoData } from "@/data/mockData";
 import { toast } from "@/components/ui/use-toast";
+import { cn } from "@/lib/utils";
 
 interface VideoPlayerProps {
   video: VideoData;
@@ -14,20 +15,52 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ video }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
     // Reset state when filePath changes
     setIsLoading(true);
     setHasError(false);
+    setIsPlaying(false);
+    setCurrentTime(0);
+    setDuration(0);
     
     // Reset and reload video when filePath changes
     if (videoRef.current) {
       videoRef.current.load();
+      videoRef.current.currentTime = 0;
     }
     
     // Log the file path to help with debugging
     console.log("Video file path:", filePath);
   }, [filePath]);
+  
+  // Handle metadata loaded - set duration
+  const handleMetadataLoaded = () => {
+    if (videoRef.current) {
+      setDuration(videoRef.current.duration);
+    }
+  };
+  
+  // Handle time update
+  const handleTimeUpdate = () => {
+    if (videoRef.current) {
+      setCurrentTime(videoRef.current.currentTime);
+    }
+  };
+  
+  // Handle video ended
+  const handleVideoEnded = () => {
+    setIsPlaying(false);
+    if (videoRef.current) {
+      videoRef.current.currentTime = 0;
+    }
+  };
   
   const handleLoadedData = () => {
     setIsLoading(false);
@@ -46,54 +79,231 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ video }) => {
     });
   };
 
+  // Toggle play/pause
+  const togglePlay = () => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+      } else {
+        // Try playing the video with catch for browser autoplay policy
+        const playPromise = videoRef.current.play();
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => {
+              // Playback started successfully
+            })
+            .catch(err => {
+              // Auto-play was prevented
+              console.error("Playback error:", err);
+              toast({
+                title: "Playback Error",
+                description: "Autoplay was blocked. Please click play again.",
+                variant: "destructive",
+              });
+            });
+        }
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  // Toggle mute
+  const toggleMute = () => {
+    if (videoRef.current) {
+      videoRef.current.muted = !isMuted;
+      setIsMuted(!isMuted);
+    }
+  };
+  
+  // Format time (seconds to MM:SS)
+  const formatTime = (timeInSeconds: number): string => {
+    const minutes = Math.floor(timeInSeconds / 60);
+    const seconds = Math.floor(timeInSeconds % 60);
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
+  
+  // Toggle fullscreen
+  const toggleFullScreen = () => {
+    if (!containerRef.current) return;
+    
+    if (!document.fullscreenElement) {
+      containerRef.current.requestFullscreen().catch(err => {
+        toast({
+          title: "Fullscreen Error",
+          description: `Error attempting to enable fullscreen: ${err.message}`,
+          variant: "destructive",
+        });
+      });
+      setIsFullScreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullScreen(false);
+    }
+  };
+  
+  // Handle seek
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const seekTime = parseFloat(e.target.value);
+    if (videoRef.current) {
+      videoRef.current.currentTime = seekTime;
+      setCurrentTime(seekTime);
+    }
+  };
+
+  // Try different video sources
+  const videoSources = [
+    { src: filePath, type: "video/mp4" },
+    { src: filePath, type: "video/webm" },
+    { src: filePath, type: "video/ogg" }
+  ];
+
   return (
-    <div className="bg-card rounded-lg overflow-hidden border border-border">
-      <div className="aspect-video bg-black relative">
+    <div ref={containerRef} className="bg-card rounded-lg overflow-hidden border border-border shadow-lg">
+      <div className="aspect-video bg-black relative group">
         {isLoading && !hasError && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-            <div className="animate-spin h-8 w-8 border-4 border-white/30 border-t-white rounded-full"></div>
+          <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
+            <div className="animate-spin h-10 w-10 border-4 border-white/30 border-t-primary rounded-full"></div>
           </div>
         )}
         
         <video 
           ref={videoRef}
-          controls 
-          className="w-full h-full"
+          className="w-full h-full object-contain bg-black"
           poster={video.thumbnailPath || '/placeholder.svg'}
           onLoadedData={handleLoadedData}
+          onLoadedMetadata={handleMetadataLoaded}
+          onTimeUpdate={handleTimeUpdate}
+          onEnded={handleVideoEnded}
           onError={handleError}
+          onClick={togglePlay}
+          muted={isMuted}
+          playsInline
         >
-          <source src={filePath} type="video/mp4" />
-          <source src={filePath} type="video/webm" />
-          <source src={filePath} type="video/ogg" />
+          {videoSources.map((source, index) => (
+            <source key={index} src={source.src} type={source.type} />
+          ))}
           Your browser does not support the video tag.
         </video>
         
+        {!isLoading && !hasError && (
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 transform transition-opacity duration-300 opacity-0 group-hover:opacity-100">
+            {/* Progress bar */}
+            <div className="flex items-center mb-2">
+              <input
+                type="range"
+                className="w-full h-1 bg-white/20 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary"
+                min={0}
+                max={duration || 100}
+                value={currentTime}
+                onChange={handleSeek}
+              />
+            </div>
+            
+            {/* Controls */}
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="text-white hover:bg-white/10 h-9 w-9 p-0 rounded-full"
+                  onClick={togglePlay}
+                >
+                  {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+                </Button>
+                
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="text-white hover:bg-white/10 h-9 w-9 p-0 rounded-full"
+                  onClick={toggleMute}
+                >
+                  {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+                </Button>
+                
+                <span className="text-white text-xs">
+                  {formatTime(currentTime)} / {formatTime(duration || 0)}
+                </span>
+              </div>
+              
+              <div className="flex items-center">
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="text-white hover:bg-white/10 h-9 w-9 p-0 rounded-full"
+                  onClick={toggleFullScreen}
+                >
+                  <Maximize className="h-5 w-5" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+        
         {hasError && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 text-white">
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 text-white z-10">
             <Play className="h-12 w-12 mb-2 opacity-50" />
             <p className="text-lg font-medium">Video failed to load</p>
             <p className="text-sm opacity-75 mb-4">The video format may be unsupported or the file may be corrupted</p>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="bg-white/10 hover:bg-white/20 border-white/30"
-              onClick={() => window.open(filePath, '_blank')}
-            >
-              Try Direct Download
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="bg-white/10 hover:bg-white/20 border-white/30"
+                onClick={() => {
+                  if (videoRef.current) {
+                    videoRef.current.load(); // Reload the video
+                    setHasError(false);
+                    setIsLoading(true);
+                  }
+                }}
+              >
+                Try Again
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="bg-primary/80 hover:bg-primary border-primary/30"
+                onClick={() => window.open(filePath, '_blank')}
+              >
+                <Download className="h-4 w-4 mr-1" />
+                <span>Download</span>
+              </Button>
+            </div>
+          </div>
+        )}
+        
+        {/* Large play button overlay */}
+        {!isLoading && !hasError && !isPlaying && (
+          <div 
+            className="absolute inset-0 flex items-center justify-center cursor-pointer"
+            onClick={togglePlay}
+          >
+            <div className="rounded-full bg-primary/80 p-4 backdrop-blur-sm transition-transform hover:scale-110">
+              <Play className="h-8 w-8 text-white" />
+            </div>
           </div>
         )}
       </div>
       
-      <div className="p-4">
+      <div className="p-5">
         <div className="flex justify-between items-start">
-          <h1 className="text-2xl font-bold">{title}</h1>
+          <div>
+            <h1 className="text-2xl font-bold mb-2">{title}</h1>
+            <p className="text-sm text-muted-foreground mb-3">
+              From: <span className="text-meme-primary font-medium">{movieName}</span>
+            </p>
+          </div>
           <Button 
             variant="outline" 
             size="sm" 
             className="flex items-center gap-1"
-            onClick={() => window.open(filePath, '_blank')}
+            onClick={() => {
+              window.open(filePath, '_blank');
+              toast({
+                title: "Download Started",
+                description: "Your download should begin shortly.",
+              });
+            }}
           >
             <Download className="h-4 w-4" />
             <span>Download</span>
@@ -101,15 +311,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ video }) => {
         </div>
         
         <div className="mt-4">
-          <p className="text-sm text-muted-foreground">
-            From: <span className="text-meme-primary">{movieName}</span>
-          </p>
-          
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2">
             {tags.map((tag) => (
               <span 
                 key={tag} 
-                className="inline-block text-xs px-2 py-1 bg-secondary rounded-full text-muted-foreground"
+                className="inline-block text-xs px-3 py-1 bg-meme-primary/10 text-meme-primary rounded-full font-medium"
               >
                 #{tag}
               </span>
