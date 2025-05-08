@@ -5,6 +5,39 @@
 
 @layer base {
   :root {
+    /* Light theme variables */
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+
+    --primary: 263 85% 75%;
+    --primary-foreground: 240 5.9% 10%;
+
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 5% 64.9%;
+
+    --accent: 12 91.6% 53.3%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 240 5.9% 10%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    /* Dark theme variables */
     --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
 
@@ -32,7 +65,6 @@
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
     --ring: 240 4.9% 83.9%;
-    --radius: 0.5rem;
   }
 }
 
@@ -42,14 +74,33 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground transition-colors duration-300;
   }
 
   .video-card-transition {
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    @apply transition-all duration-300 hover:shadow-lg;
   }
   
   .video-card-transition:hover {
     transform: translateY(-5px);
+  }
+  
+  .gradient-text {
+    @apply bg-gradient-to-r from-meme-primary to-accent bg-clip-text text-transparent;
+  }
+  
+  .glass-card {
+    @apply bg-card/60 backdrop-blur-sm border border-border/60 shadow-md;
+  }
+  
+  .animated-gradient {
+    background-size: 200% 200%;
+    animation: gradient-animation 5s ease infinite;
+  }
+  
+  @keyframes gradient-animation {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
   }
 }

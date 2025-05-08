@@ -1,10 +1,9 @@
-
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { VideoData } from "@/data/mockData";
 import { api } from "@/lib/api";
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
+import NavbarEnhanced from "@/components/layout/NavbarEnhanced";
+import FooterEnhanced from "@/components/layout/FooterEnhanced";
 import VideoPlayer from "@/components/ui/VideoPlayer";
 import VideoGrid from "@/components/ui/VideoGrid";
 import { toast } from "@/components/ui/use-toast";
@@ -127,14 +126,14 @@ const VideoDetail = () => {
   if (loading) {
     return (
       <>
-        <Navbar />
+        <NavbarEnhanced />
         <div className="container mx-auto px-4 py-16 min-h-[70vh] flex items-center justify-center">
           <div className="text-center">
             <Loader className="h-10 w-10 animate-spin mx-auto mb-6 text-meme-primary" />
             <p className="text-lg">Loading video...</p>
           </div>
         </div>
-        <Footer />
+        <FooterEnhanced />
       </>
     );
   }
@@ -142,7 +141,7 @@ const VideoDetail = () => {
   if (error || !video) {
     return (
       <>
-        <Navbar />
+        <NavbarEnhanced />
         <div className="container mx-auto px-4 py-16 min-h-[70vh] flex items-center justify-center">
           <div className="max-w-md w-full bg-card border border-border rounded-lg p-8 text-center shadow-lg">
             <h1 className="text-2xl font-bold mb-4">Video not found</h1>
@@ -157,14 +156,14 @@ const VideoDetail = () => {
             </Link>
           </div>
         </div>
-        <Footer />
+        <FooterEnhanced />
       </>
     );
   }
   
   return (
     <>
-      <Navbar />
+      <NavbarEnhanced />
       <div className="container mx-auto px-4 py-8 pb-16">
         <div className="max-w-4xl mx-auto mb-12">
           {video && (
@@ -209,7 +208,7 @@ const VideoDetail = () => {
           </div>
         )}
       </div>
-      <Footer />
+      <FooterEnhanced />
     </>
   );
 };
