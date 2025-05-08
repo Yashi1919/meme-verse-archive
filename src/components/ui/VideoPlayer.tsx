@@ -1,17 +1,20 @@
 
 import React, { useRef, useEffect, useState } from "react";
-import { Download, Play, Pause, Volume2, VolumeX, Maximize, SkipBack, SkipForward } from "lucide-react";
+import { Download, Play, Pause, Volume2, VolumeX, Maximize, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { VideoData } from "@/data/mockData";
 import { toast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
+import { api } from "@/lib/api";
 
 interface VideoPlayerProps {
   video: VideoData;
+  onDelete?: () => void;
+  showDeleteButton?: boolean;
 }
 
-const VideoPlayer: React.FC<VideoPlayerProps> = ({ video }) => {
-  const { title, filePath, tags, movieName } = video;
+const VideoPlayer: React.FC<VideoPlayerProps> = ({ video, onDelete, showDeleteButton = false }) => {
+  const { title, filePath, tags, movieName, userId } = video;
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
@@ -44,6 +47,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ video }) => {
   const handleMetadataLoaded = () => {
     if (videoRef.current) {
       setDuration(videoRef.current.duration);
+      console.log("Video metadata loaded, duration:", videoRef.current.duration);
     }
   };
   
@@ -68,7 +72,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ video }) => {
   };
   
   const handleError = (e: React.SyntheticEvent<HTMLVideoElement>) => {
-    console.error("Video error:", e);
+    console.error("Video error:", e, videoRef.current?.error);
     setIsLoading(false);
     setHasError(true);
     
@@ -84,17 +88,20 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ video }) => {
     if (videoRef.current) {
       if (isPlaying) {
         videoRef.current.pause();
+        setIsPlaying(false);
       } else {
         // Try playing the video with catch for browser autoplay policy
         const playPromise = videoRef.current.play();
         if (playPromise !== undefined) {
           playPromise
             .then(() => {
-              // Playback started successfully
+              setIsPlaying(true);
+              console.log("Video started playing successfully");
             })
             .catch(err => {
               // Auto-play was prevented
               console.error("Playback error:", err);
+              setIsPlaying(false);
               toast({
                 title: "Playback Error",
                 description: "Autoplay was blocked. Please click play again.",
@@ -103,7 +110,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ video }) => {
             });
         }
       }
-      setIsPlaying(!isPlaying);
     }
   };
 
@@ -149,13 +155,13 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ video }) => {
       setCurrentTime(seekTime);
     }
   };
-
-  // Try different video sources
-  const videoSources = [
-    { src: filePath, type: "video/mp4" },
-    { src: filePath, type: "video/webm" },
-    { src: filePath, type: "video/ogg" }
-  ];
+  
+  // Handle delete video
+  const handleDeleteVideo = async () => {
+    if (onDelete) {
+      onDelete();
+    }
+  };
 
   return (
     <div ref={containerRef} className="bg-card rounded-lg overflow-hidden border border-border shadow-lg">
@@ -170,6 +176,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ video }) => {
           ref={videoRef}
           className="w-full h-full object-contain bg-black"
           poster={video.thumbnailPath || '/placeholder.svg'}
+          controls={false}
           onLoadedData={handleLoadedData}
           onLoadedMetadata={handleMetadataLoaded}
           onTimeUpdate={handleTimeUpdate}
@@ -178,10 +185,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ video }) => {
           onClick={togglePlay}
           muted={isMuted}
           playsInline
+          preload="auto"
         >
-          {videoSources.map((source, index) => (
-            <source key={index} src={source.src} type={source.type} />
-          ))}
+          <source src={filePath} type="video/mp4" />
+          <source src={filePath} type="video/webm" />
           Your browser does not support the video tag.
         </video>
         
@@ -293,21 +300,34 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ video }) => {
               From: <span className="text-meme-primary font-medium">{movieName}</span>
             </p>
           </div>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="flex items-center gap-1"
-            onClick={() => {
-              window.open(filePath, '_blank');
-              toast({
-                title: "Download Started",
-                description: "Your download should begin shortly.",
-              });
-            }}
-          >
-            <Download className="h-4 w-4" />
-            <span>Download</span>
-          </Button>
+          <div className="flex gap-2">
+            {showDeleteButton && (
+              <Button 
+                variant="destructive" 
+                size="sm" 
+                className="flex items-center gap-1"
+                onClick={handleDeleteVideo}
+              >
+                <Trash2 className="h-4 w-4" />
+                <span>Delete</span>
+              </Button>
+            )}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex items-center gap-1"
+              onClick={() => {
+                window.open(filePath, '_blank');
+                toast({
+                  title: "Download Started",
+                  description: "Your download should begin shortly.",
+                });
+              }}
+            >
+              <Download className="h-4 w-4" />
+              <span>Download</span>
+            </Button>
+          </div>
         </div>
         
         <div className="mt-4">

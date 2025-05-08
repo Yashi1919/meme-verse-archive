@@ -8,8 +8,10 @@ import Footer from "@/components/layout/Footer";
 import VideoPlayer from "@/components/ui/VideoPlayer";
 import VideoGrid from "@/components/ui/VideoGrid";
 import { toast } from "@/components/ui/use-toast";
-import { Loader } from "lucide-react";
+import { Loader, Trash2 } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 
 const VideoDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -17,7 +19,15 @@ const VideoDetail = () => {
   const [relatedVideos, setRelatedVideos] = useState<VideoData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string>("anonymous"); // In a real app, this would come from authentication
   const navigate = useNavigate();
+  
+  // Fetch the current user ID (in a real app, this would come from authentication)
+  // For demo purposes, we're using localStorage
+  useEffect(() => {
+    const userId = localStorage.getItem("userId") || "anonymous";
+    setCurrentUserId(userId);
+  }, []);
   
   useEffect(() => {
     const fetchVideo = async () => {
@@ -89,6 +99,31 @@ const VideoDetail = () => {
     fetchVideo();
   }, [id, navigate]);
   
+  const handleDeleteVideo = async () => {
+    if (!video || !id) return;
+    
+    try {
+      setLoading(true);
+      await api.deleteVideo(id);
+      toast({
+        title: "Success",
+        description: "Video deleted successfully",
+      });
+      navigate("/");
+    } catch (error) {
+      console.error("Error deleting video:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete the video",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const canDelete = video?.userId === currentUserId || currentUserId === "admin";
+  
   if (loading) {
     return (
       <>
@@ -134,7 +169,32 @@ const VideoDetail = () => {
         <div className="max-w-4xl mx-auto mb-12">
           {video && (
             <>
-              <VideoPlayer video={video} />
+              <VideoPlayer 
+                video={video}
+                showDeleteButton={canDelete}
+                onDelete={() => document.getElementById("delete-dialog-trigger")?.click()}
+              />
+              
+              {/* Hidden delete dialog trigger */}
+              <AlertDialog>
+                <AlertDialogTrigger id="delete-dialog-trigger" className="hidden">
+                  Delete Video
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action cannot be undone. This will permanently delete the video.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDeleteVideo} className="bg-destructive hover:bg-destructive/90">
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </>
           )}
         </div>

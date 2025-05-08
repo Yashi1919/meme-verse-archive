@@ -148,6 +148,12 @@ export const api = {
         throw new Error('Video file is required');
       }
       
+      // Add the user ID to the form data, if available
+      if (!videoData.get('userId')) {
+        const userId = localStorage.getItem("userId") || "anonymous";
+        videoData.append('userId', userId);
+      }
+      
       const response = await apiClient.post('/videos/upload', videoData, {
         headers: {
           'Content-Type': 'multipart/form-data'
@@ -169,6 +175,16 @@ export const api = {
       return uploadedVideo;
     } catch (error) {
       console.error('Error uploading video to API:', error);
+      throw error;
+    }
+  },
+  
+  // Delete a video
+  deleteVideo: async (id: string): Promise<void> => {
+    try {
+      await apiClient.delete(`/videos/${id}`);
+    } catch (error) {
+      console.error('Error deleting video from API:', error);
       throw error;
     }
   }
