@@ -56,8 +56,8 @@ const Search = () => {
             <div className="w-full">
               <form onSubmit={handleSubmit} className="flex items-center gap-2">
                 <SearchBar 
-                  value={searchValue}
-                  setValue={setSearchValue}
+                  onSearch={(value) => setSearchValue(value)}
+                  defaultValue={searchValue}
                   placeholder="Search by title, movie, or tags..." 
                   className="w-full"
                 />
