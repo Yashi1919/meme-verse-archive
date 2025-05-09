@@ -1,12 +1,16 @@
 
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import NavbarEnhanced from "@/components/layout/NavbarEnhanced";
 import FooterEnhanced from "@/components/layout/FooterEnhanced";
 import VideoUploader from "@/components/ui/VideoUploader";
+import BatchUploader from "@/components/ui/BatchUploader";
 import { FilmIcon, CheckCircle, HelpCircle } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Upload = () => {
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState("single");
   
   const handleUploadSuccess = () => {
     // Redirect to the homepage or search page after successful upload
@@ -21,14 +25,27 @@ const Upload = () => {
       <div className="container mx-auto px-4 py-12 max-w-3xl flex-1">
         <div className="mb-8 text-center">
           <FilmIcon className="h-12 w-12 mx-auto text-meme-primary mb-4" />
-          <h1 className="text-3xl font-bold mb-2 gradient-text">Upload Your Meme</h1>
+          <h1 className="text-3xl font-bold mb-2 gradient-text">Upload Your Memes</h1>
           <p className="text-muted-foreground">
             Share your favorite movie memes with the community
           </p>
         </div>
         
         <div className="glass-card p-6 rounded-lg">
-          <VideoUploader onSuccess={handleUploadSuccess} />
+          <Tabs defaultValue="single" value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid grid-cols-2 w-full mb-6">
+              <TabsTrigger value="single">Single Upload</TabsTrigger>
+              <TabsTrigger value="batch">Batch Upload</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="single">
+              <VideoUploader onSuccess={handleUploadSuccess} />
+            </TabsContent>
+            
+            <TabsContent value="batch">
+              <BatchUploader onSuccess={handleUploadSuccess} />
+            </TabsContent>
+          </Tabs>
         </div>
         
         <div className="mt-8 bg-card/60 backdrop-blur-sm border border-border rounded-lg p-6">
@@ -51,7 +68,7 @@ const Upload = () => {
             </li>
             <li className="flex items-center text-sm text-muted-foreground">
               <CheckCircle className="h-4 w-4 mr-2 text-meme-primary" />
-              Include the movie name for better categorization
+              {activeTab === "batch" ? "Use batch upload for multiple clips from the same movie" : "Include the movie name for better categorization"}
             </li>
           </ul>
         </div>

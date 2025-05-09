@@ -1,4 +1,3 @@
-
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
@@ -128,6 +127,83 @@ router.post('/upload', upload.single('video'), async (req, res) => {
     res.status(201).json(savedVideo);
   } catch (err) {
     console.error('Upload error:', err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// POST upload multiple videos
+router.post('/upload/batch', upload.array('videos', 10), async (req, res) => {
+  try {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ message: 'Please upload at least one video file' });
+    }
+
+    const { movieName, tags: tagsString } = req.body;
+    
+    if (!tagsString) {
+      // Delete the uploaded files if data is invalid
+      for (const file of req.files) {
+        await unlinkAsync(file.path);
+      }
+      return res.status(400).json({ message: 'Tags are required for batch upload' });
+    }
+
+    // Process tags (convert string to array if needed)
+    let parsedTags = tagsString;
+    if (typeof tagsString === 'string') {
+      parsedTags = tagsString.split(',').map(tag => tag.trim());
+    }
+
+    // Process each uploaded file
+    const uploadedVideos = [];
+    const errors = [];
+
+    for (const file of req.files) {
+      try {
+        // Generate title if not provided individually
+        const title = `${movieName || 'Movie'} meme ${uploadedVideos.length + 1}`;
+        
+        // The video path to serve to clients
+        const videoPath = `${req.protocol}://${req.get('host')}/uploads/${file.filename}`;
+        
+        // Create new video document
+        const video = new Video({
+          title,
+          movieName: movieName || 'Unknown',
+          filePath: videoPath,
+          thumbnailPath: '', // Client-side thumbnail generation
+          tags: parsedTags,
+          userId: req.body.userId || 'anonymous'
+        });
+        
+        const savedVideo = await video.save();
+        uploadedVideos.push(savedVideo);
+      } catch (err) {
+        console.error('Error processing file:', file.originalname, err);
+        errors.push({ file: file.originalname, error: err.message });
+        // Try to remove failed file
+        try {
+          await unlinkAsync(file.path);
+        } catch (unlinkErr) {
+          console.error('Failed to remove file after error:', unlinkErr);
+        }
+      }
+    }
+
+    if (uploadedVideos.length === 0) {
+      return res.status(500).json({ 
+        message: 'Failed to upload any videos', 
+        errors 
+      });
+    }
+
+    res.status(201).json({ 
+      message: `Successfully uploaded ${uploadedVideos.length} videos${errors.length > 0 ? ` with ${errors.length} errors` : ''}`,
+      uploadedVideos,
+      errors: errors.length > 0 ? errors : undefined
+    });
+  } catch (err) {
+    console.error('Batch upload error:', err);
     res.status(500).json({ message: err.message });
   }
 });

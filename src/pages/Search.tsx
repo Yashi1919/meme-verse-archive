@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -55,11 +56,10 @@ const Search = () => {
             <div className="w-full">
               <form onSubmit={handleSubmit} className="flex items-center gap-2">
                 <SearchBar 
-                  onChange={(e) => setSearchValue(e.target.value)}
-                  onClear={() => setSearchValue("")}
+                  value={searchValue}
+                  setValue={setSearchValue}
                   placeholder="Search by title, movie, or tags..." 
                   className="w-full"
-                  defaultValue={searchValue}
                 />
                 <Button type="submit" className="neo-blur text-white">
                   <SearchIcon className="h-5 w-5 mr-2" />

@@ -179,6 +179,60 @@ export const api = {
     }
   },
   
+  // Upload multiple videos (batch upload)
+  uploadBatchVideos: async (videoData: FormData): Promise<{
+    message: string;
+    uploadedVideos: VideoData[];
+    errors?: {file: string, error: string}[];
+  }> => {
+    try {
+      // Ensure the FormData contains required fields
+      if (!videoData.get('tags')) {
+        throw new Error('Tags are required');
+      }
+      
+      // Check if there are any files in the FormData
+      let hasFiles = false;
+      // @ts-ignore - FormData.entries() exists but TypeScript doesn't recognize it
+      for (const [key, value] of videoData.entries()) {
+        if (key === 'videos') {
+          hasFiles = true;
+          break;
+        }
+      }
+      
+      if (!hasFiles) {
+        throw new Error('Video files are required');
+      }
+      
+      const response = await apiClient.post('/videos/upload/batch', videoData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        },
+        // Add timeout for large uploads
+        timeout: 120000, // 2 minute timeout for batch uploads
+      });
+      
+      console.log("Batch upload response:", response.data);
+      
+      // Process uploaded videos to ensure consistent format
+      const processedVideos = response.data.uploadedVideos.map((video: any) => ({
+        ...video,
+        id: video._id || video.id,
+        filePath: sanitizeVideoUrl(video.filePath)
+      }));
+      
+      return {
+        message: response.data.message,
+        uploadedVideos: processedVideos,
+        errors: response.data.errors
+      };
+    } catch (error) {
+      console.error('Error batch uploading videos to API:', error);
+      throw error;
+    }
+  },
+  
   // Delete a video
   deleteVideo: async (id: string): Promise<void> => {
     try {
