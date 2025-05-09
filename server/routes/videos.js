@@ -111,12 +111,15 @@ router.post('/upload', upload.single('video'), async (req, res) => {
       parsedTags = tags.split(',').map(tag => tag.trim());
     }
 
+    // The video path to serve to clients
+    const videoPath = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+
     // Create new video document
     const video = new Video({
       title,
       movieName: movieName || 'Unknown',
-      filePath: `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`,
-      thumbnailPath: '', // You would generate thumbnails here in production
+      filePath: videoPath,
+      thumbnailPath: '', // Client-side thumbnail generation
       tags: parsedTags,
       userId: req.body.userId || 'anonymous'
     });

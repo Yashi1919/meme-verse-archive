@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect, useState } from "react";
 import { Download, Play, Pause, Volume2, VolumeX, Maximize, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,7 +22,51 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ video, onDelete, showDeleteBu
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [thumbnailUrl, setThumbnailUrl] = useState(video.thumbnailPath || '');
   const containerRef = useRef<HTMLDivElement>(null);
+  
+  // Generate thumbnail from video if none exists
+  useEffect(() => {
+    if (!filePath) return;
+    
+    if (!thumbnailUrl) {
+      // Create a temporary video element to extract a frame
+      const tempVideo = document.createElement('video');
+      tempVideo.crossOrigin = 'anonymous';
+      tempVideo.src = filePath;
+      tempVideo.preload = 'metadata';
+      tempVideo.muted = true;
+      
+      const generateThumbnail = () => {
+        try {
+          // Seek to 25% of the video for a representative frame
+          tempVideo.currentTime = tempVideo.duration * 0.25;
+          
+          tempVideo.addEventListener('seeked', () => {
+            // Create canvas and get frame
+            const canvas = document.createElement('canvas');
+            canvas.width = tempVideo.videoWidth;
+            canvas.height = tempVideo.videoHeight;
+            
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              ctx.drawImage(tempVideo, 0, 0, canvas.width, canvas.height);
+              const dataUrl = canvas.toDataURL('image/jpeg');
+              setThumbnailUrl(dataUrl);
+            }
+          }, { once: true });
+        } catch (error) {
+          console.error("Error generating thumbnail:", error);
+        }
+      };
+      
+      tempVideo.addEventListener('loadedmetadata', generateThumbnail, { once: true });
+      tempVideo.addEventListener('error', () => {
+        console.error("Error loading video for thumbnail");
+        setThumbnailUrl('/placeholder.svg');
+      }, { once: true });
+    }
+  }, [filePath, thumbnailUrl]);
   
   useEffect(() => {
     // Reset state when filePath changes
@@ -175,7 +218,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ video, onDelete, showDeleteBu
         <video 
           ref={videoRef}
           className="w-full h-full object-contain bg-black"
-          poster={video.thumbnailPath || '/placeholder.svg'}
+          poster={thumbnailUrl || '/placeholder.svg'}
           controls={false}
           onLoadedData={handleLoadedData}
           onLoadedMetadata={handleMetadataLoaded}

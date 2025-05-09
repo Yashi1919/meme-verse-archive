@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { VideoData } from "@/data/mockData";
 import { Play, Film, Clock } from "lucide-react";
@@ -11,6 +11,9 @@ interface VideoCardProps {
 
 const VideoCard: React.FC<VideoCardProps> = ({ video }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const [thumbnailUrl, setThumbnailUrl] = useState(video.thumbnailPath || '/placeholder.svg');
+  const [isLoading, setIsLoading] = useState(true);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   // Check for valid video and ID (supporting both _id from API and id from mock data)
   if (!video || (!video.id && !video._id)) {
@@ -18,8 +21,49 @@ const VideoCard: React.FC<VideoCardProps> = ({ video }) => {
   }
   
   const videoId = video._id || video.id; // Use _id from API or fallback to id from mock data
-  const { title, thumbnailPath, tags, movieName } = video;
+  const { title, filePath, tags, movieName } = video;
   
+  // Extract frame from video for thumbnail
+  useEffect(() => {
+    if (!filePath || thumbnailUrl !== '/placeholder.svg') return;
+
+    const videoElement = document.createElement('video');
+    videoElement.crossOrigin = 'anonymous';
+    videoElement.src = filePath;
+    videoElement.muted = true;
+    videoElement.preload = 'metadata';
+
+    const generateThumbnail = () => {
+      try {
+        // Seek to 25% of the video for a representative frame
+        videoElement.currentTime = videoElement.duration * 0.25;
+        
+        videoElement.addEventListener('seeked', () => {
+          // Create canvas and get frame
+          const canvas = document.createElement('canvas');
+          canvas.width = videoElement.videoWidth;
+          canvas.height = videoElement.videoHeight;
+          
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+            const dataUrl = canvas.toDataURL('image/jpeg');
+            setThumbnailUrl(dataUrl);
+            setIsLoading(false);
+          }
+        }, { once: true });
+      } catch (error) {
+        console.error("Error generating thumbnail:", error);
+      }
+    };
+
+    videoElement.addEventListener('loadedmetadata', generateThumbnail, { once: true });
+    videoElement.addEventListener('error', () => {
+      console.error("Error loading video for thumbnail");
+      setIsLoading(false);
+    }, { once: true });
+  }, [filePath, thumbnailUrl]);
+
   return (
     <Link 
       to={`/video/${videoId}`} 
@@ -29,8 +73,13 @@ const VideoCard: React.FC<VideoCardProps> = ({ video }) => {
     >
       <div className="rounded-lg overflow-hidden glass-card video-card-transition hover:border-meme-primary">
         <div className="aspect-video relative overflow-hidden bg-muted">
+          {isLoading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-card/30">
+              <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          )}
           <img 
-            src={thumbnailPath || '/placeholder.svg'} 
+            src={thumbnailUrl} 
             alt={title} 
             className={cn(
               "w-full h-full object-cover transition-transform duration-700",
