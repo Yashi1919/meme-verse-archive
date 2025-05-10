@@ -22,6 +22,12 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
+// Create thumbnails directory
+const thumbnailsDir = path.join(uploadDir, 'thumbnails');
+if (!fs.existsSync(thumbnailsDir)) {
+  fs.mkdirSync(thumbnailsDir, { recursive: true });
+}
+
 // Middlewares
 app.use(cors());
 app.use(express.json());

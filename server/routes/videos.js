@@ -1,3 +1,4 @@
+
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
@@ -7,6 +8,8 @@ const Video = require('../models/Video');
 const { promisify } = require('util');
 const unlinkAsync = promisify(fs.unlink);
 const mongoose = require('mongoose');
+const ffmpeg = require('fluent-ffmpeg');
+const { createThumbnail } = require('../utils/videoProcessor');
 
 // Configure multer for video uploads
 const storage = multer.diskStorage({
@@ -89,6 +92,40 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+// Function to generate thumbnail from video
+async function generateThumbnail(videoPath, outputPath, fileName) {
+  try {
+    // Create thumbnails directory if it doesn't exist
+    const thumbnailDir = path.join(process.env.UPLOAD_DIR || './uploads', 'thumbnails');
+    if (!fs.existsSync(thumbnailDir)) {
+      fs.mkdirSync(thumbnailDir, { recursive: true });
+    }
+    
+    const thumbnailPath = path.join(thumbnailDir, `thumb_${fileName.replace(/\.[^/.]+$/, ".jpg")}`);
+    
+    return new Promise((resolve, reject) => {
+      ffmpeg(videoPath)
+        .on('error', (err) => {
+          console.error('Error generating thumbnail:', err);
+          reject(err);
+        })
+        .on('end', () => {
+          resolve(`${outputPath}/thumbnails/thumb_${fileName.replace(/\.[^/.]+$/, ".jpg")}`);
+        })
+        .screenshots({
+          count: 1,
+          folder: thumbnailDir,
+          filename: `thumb_${fileName.replace(/\.[^/.]+$/, ".jpg")}`,
+          size: '320x240',
+          timestamps: ['25%'] // Take screenshot at 25% of the video duration
+        });
+    });
+  } catch (error) {
+    console.error('Failed to generate thumbnail:', error);
+    return null;
+  }
+}
+
 // POST upload a new video
 router.post('/upload', upload.single('video'), async (req, res) => {
   try {
@@ -112,13 +149,31 @@ router.post('/upload', upload.single('video'), async (req, res) => {
 
     // The video path to serve to clients
     const videoPath = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+    
+    // Generate thumbnail
+    const outputDir = '/uploads';
+    let thumbnailPath = '';
+    
+    try {
+      thumbnailPath = await generateThumbnail(
+        req.file.path, 
+        outputDir, 
+        req.file.filename
+      );
+      
+      thumbnailPath = `${req.protocol}://${req.get('host')}${thumbnailPath}`;
+    } catch (thumbErr) {
+      console.error('Thumbnail generation error:', thumbErr);
+      // Continue without thumbnail if generation fails
+      thumbnailPath = '';
+    }
 
     // Create new video document
     const video = new Video({
       title,
       movieName: movieName || 'Unknown',
       filePath: videoPath,
-      thumbnailPath: '', // Client-side thumbnail generation
+      thumbnailPath, // Add thumbnail path
       tags: parsedTags,
       userId: req.body.userId || 'anonymous'
     });
@@ -157,6 +212,7 @@ router.post('/upload/batch', upload.array('videos', 10), async (req, res) => {
     // Process each uploaded file
     const uploadedVideos = [];
     const errors = [];
+    const outputDir = '/uploads';
 
     for (const file of req.files) {
       try {
@@ -166,12 +222,27 @@ router.post('/upload/batch', upload.array('videos', 10), async (req, res) => {
         // The video path to serve to clients
         const videoPath = `${req.protocol}://${req.get('host')}/uploads/${file.filename}`;
         
+        // Generate thumbnail for each video
+        let thumbnailPath = '';
+        try {
+          thumbnailPath = await generateThumbnail(
+            file.path, 
+            outputDir, 
+            file.filename
+          );
+          
+          thumbnailPath = `${req.protocol}://${req.get('host')}${thumbnailPath}`;
+        } catch (thumbErr) {
+          console.error('Thumbnail generation error for batch file:', thumbErr);
+          // Continue without thumbnail if generation fails
+        }
+        
         // Create new video document
         const video = new Video({
           title,
           movieName: movieName || 'Unknown',
           filePath: videoPath,
-          thumbnailPath: '', // Client-side thumbnail generation
+          thumbnailPath,
           tags: parsedTags,
           userId: req.body.userId || 'anonymous'
         });
@@ -224,6 +295,21 @@ router.delete('/:id', async (req, res) => {
     // Delete file from filesystem
     try {
       await unlinkAsync(fullPath);
+      
+      // Also delete thumbnail if it exists
+      if (video.thumbnailPath) {
+        const thumbnailFileName = video.thumbnailPath.split('/').pop();
+        if (thumbnailFileName) {
+          const thumbnailPath = path.join(
+            process.env.UPLOAD_DIR || './uploads', 
+            'thumbnails', 
+            thumbnailFileName
+          );
+          if (fs.existsSync(thumbnailPath)) {
+            await unlinkAsync(thumbnailPath);
+          }
+        }
+      }
     } catch (err) {
       console.error('File deletion error:', err);
       // Continue even if file deletion fails

@@ -52,7 +52,8 @@ export const api = {
       const videos = response.data.map((video: any) => ({
         ...video,
         id: video._id, // Add id property based on _id for consistent handling
-        filePath: sanitizeVideoUrl(video.filePath) // Ensure video URL is properly formatted
+        filePath: sanitizeVideoUrl(video.filePath), // Ensure video URL is properly formatted
+        thumbnailPath: video.thumbnailPath ? sanitizeVideoUrl(video.thumbnailPath) : '' // Ensure thumbnail URL is properly formatted
       }));
       
       return videos;
@@ -86,7 +87,8 @@ export const api = {
       const video = {
         ...response.data,
         id: response.data._id,
-        filePath: sanitizeVideoUrl(response.data.filePath) // Ensure video URL is properly formatted
+        filePath: sanitizeVideoUrl(response.data.filePath), // Ensure video URL is properly formatted
+        thumbnailPath: response.data.thumbnailPath ? sanitizeVideoUrl(response.data.thumbnailPath) : '' // Ensure thumbnail URL is properly formatted
       };
       
       return video;
@@ -115,7 +117,8 @@ export const api = {
       const videos = response.data.map((video: any) => ({
         ...video,
         id: video._id, // Add id property based on _id for consistent handling
-        filePath: sanitizeVideoUrl(video.filePath) // Ensure video URL is properly formatted
+        filePath: sanitizeVideoUrl(video.filePath), // Ensure video URL is properly formatted
+        thumbnailPath: video.thumbnailPath ? sanitizeVideoUrl(video.thumbnailPath) : '' // Ensure thumbnail URL is properly formatted
       }));
       
       return videos;
@@ -168,7 +171,8 @@ export const api = {
       const uploadedVideo = {
         ...response.data,
         id: response.data._id, // Ensure id is set
-        filePath: sanitizeVideoUrl(response.data.filePath)
+        filePath: sanitizeVideoUrl(response.data.filePath),
+        thumbnailPath: response.data.thumbnailPath ? sanitizeVideoUrl(response.data.thumbnailPath) : ''
       };
       
       console.log("Processed uploaded video:", uploadedVideo);
@@ -219,7 +223,8 @@ export const api = {
       const processedVideos = response.data.uploadedVideos.map((video: any) => ({
         ...video,
         id: video._id || video.id,
-        filePath: sanitizeVideoUrl(video.filePath)
+        filePath: sanitizeVideoUrl(video.filePath),
+        thumbnailPath: video.thumbnailPath ? sanitizeVideoUrl(video.thumbnailPath) : ''
       }));
       
       return {

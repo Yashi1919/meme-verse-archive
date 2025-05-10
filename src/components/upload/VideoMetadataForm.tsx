@@ -5,12 +5,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
 interface VideoMetadataFormProps {
-  title: string;
-  setTitle: (value: string) => void;
+  title?: string;
+  setTitle?: (value: string) => void;
   movieName: string;
   setMovieName: (value: string) => void;
   tags: string;
   setTags: (value: string) => void;
+  titleRequired?: boolean;
 }
 
 const VideoMetadataForm: React.FC<VideoMetadataFormProps> = ({
@@ -20,19 +21,22 @@ const VideoMetadataForm: React.FC<VideoMetadataFormProps> = ({
   setMovieName,
   tags,
   setTags,
+  titleRequired = true,
 }) => {
   return (
     <div className="space-y-4">
-      <div>
-        <Label htmlFor="title">Title</Label>
-        <Input
-          id="title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Enter a catchy title for your meme"
-          required
-        />
-      </div>
+      {setTitle && (
+        <div>
+          <Label htmlFor="title">Title</Label>
+          <Input
+            id="title"
+            value={title || ""}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Enter a catchy title for your meme"
+            required={titleRequired}
+          />
+        </div>
+      )}
 
       <div>
         <Label htmlFor="movie">Movie Name</Label>
