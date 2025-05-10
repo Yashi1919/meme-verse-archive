@@ -29,12 +29,24 @@ if (!fs.existsSync(thumbnailsDir)) {
 }
 
 // Middlewares
-app.use(cors());
+app.use(cors({
+  origin: '*', // Allow any origin for development
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Serve static files from uploads directory
+// Make the path absolute for reliable file serving
+app.use('/uploads', express.static(path.join(__dirname, uploadDir)));
 
 // Routes
 app.use('/api/videos', videoRoutes);
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', message: 'Server is running' });
+});
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI)

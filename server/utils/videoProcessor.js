@@ -13,6 +13,7 @@ const fs = require('fs');
  */
 const createThumbnail = async (videoPath, outputDir, filename, timestamp = '25%') => {
   try {
+    console.log(`Creating thumbnail for video: ${videoPath}`);
     // Create thumbnails directory if it doesn't exist
     const thumbnailDir = path.join(outputDir, 'thumbnails');
     if (!fs.existsSync(thumbnailDir)) {
@@ -29,6 +30,7 @@ const createThumbnail = async (videoPath, outputDir, filename, timestamp = '25%'
           reject(err);
         })
         .on('end', () => {
+          console.log(`Thumbnail generated successfully: ${thumbnailPath}`);
           resolve(thumbnailPath);
         })
         .screenshots({

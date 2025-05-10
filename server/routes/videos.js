@@ -8,13 +8,16 @@ const Video = require('../models/Video');
 const { promisify } = require('util');
 const unlinkAsync = promisify(fs.unlink);
 const mongoose = require('mongoose');
-const ffmpeg = require('fluent-ffmpeg');
 const { createThumbnail } = require('../utils/videoProcessor');
 
 // Configure multer for video uploads
 const storage = multer.diskStorage({
   destination: function(req, file, cb) {
-    cb(null, process.env.UPLOAD_DIR || './uploads');
+    const uploadDir = process.env.UPLOAD_DIR || './uploads';
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
   },
   filename: function(req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -92,40 +95,6 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Function to generate thumbnail from video
-async function generateThumbnail(videoPath, outputPath, fileName) {
-  try {
-    // Create thumbnails directory if it doesn't exist
-    const thumbnailDir = path.join(process.env.UPLOAD_DIR || './uploads', 'thumbnails');
-    if (!fs.existsSync(thumbnailDir)) {
-      fs.mkdirSync(thumbnailDir, { recursive: true });
-    }
-    
-    const thumbnailPath = path.join(thumbnailDir, `thumb_${fileName.replace(/\.[^/.]+$/, ".jpg")}`);
-    
-    return new Promise((resolve, reject) => {
-      ffmpeg(videoPath)
-        .on('error', (err) => {
-          console.error('Error generating thumbnail:', err);
-          reject(err);
-        })
-        .on('end', () => {
-          resolve(`${outputPath}/thumbnails/thumb_${fileName.replace(/\.[^/.]+$/, ".jpg")}`);
-        })
-        .screenshots({
-          count: 1,
-          folder: thumbnailDir,
-          filename: `thumb_${fileName.replace(/\.[^/.]+$/, ".jpg")}`,
-          size: '320x240',
-          timestamps: ['25%'] // Take screenshot at 25% of the video duration
-        });
-    });
-  } catch (error) {
-    console.error('Failed to generate thumbnail:', error);
-    return null;
-  }
-}
-
 // POST upload a new video
 router.post('/upload', upload.single('video'), async (req, res) => {
   try {
@@ -147,21 +116,29 @@ router.post('/upload', upload.single('video'), async (req, res) => {
       parsedTags = tags.split(',').map(tag => tag.trim());
     }
 
+    // Get host from request for constructing absolute URLs
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const uploadDir = process.env.UPLOAD_DIR || './uploads';
+    
     // The video path to serve to clients
-    const videoPath = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+    const videoPath = `${baseUrl}/uploads/${req.file.filename}`;
     
     // Generate thumbnail
-    const outputDir = '/uploads';
     let thumbnailPath = '';
     
     try {
-      thumbnailPath = await generateThumbnail(
-        req.file.path, 
-        outputDir, 
+      // Use the utility function to create thumbnail
+      const thumbnailResult = await createThumbnail(
+        req.file.path,
+        uploadDir,
         req.file.filename
       );
       
-      thumbnailPath = `${req.protocol}://${req.get('host')}${thumbnailPath}`;
+      if (thumbnailResult) {
+        // Get just the filename part from the result
+        const thumbnailFilename = path.basename(thumbnailResult);
+        thumbnailPath = `${baseUrl}/uploads/thumbnails/${thumbnailFilename}`;
+      }
     } catch (thumbErr) {
       console.error('Thumbnail generation error:', thumbErr);
       // Continue without thumbnail if generation fails
@@ -173,7 +150,7 @@ router.post('/upload', upload.single('video'), async (req, res) => {
       title,
       movieName: movieName || 'Unknown',
       filePath: videoPath,
-      thumbnailPath, // Add thumbnail path
+      thumbnailPath,
       tags: parsedTags,
       userId: req.body.userId || 'anonymous'
     });
@@ -212,7 +189,8 @@ router.post('/upload/batch', upload.array('videos', 10), async (req, res) => {
     // Process each uploaded file
     const uploadedVideos = [];
     const errors = [];
-    const outputDir = '/uploads';
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const uploadDir = process.env.UPLOAD_DIR || './uploads';
 
     for (const file of req.files) {
       try {
@@ -220,18 +198,23 @@ router.post('/upload/batch', upload.array('videos', 10), async (req, res) => {
         const title = `${movieName || 'Movie'} meme ${uploadedVideos.length + 1}`;
         
         // The video path to serve to clients
-        const videoPath = `${req.protocol}://${req.get('host')}/uploads/${file.filename}`;
+        const videoPath = `${baseUrl}/uploads/${file.filename}`;
         
         // Generate thumbnail for each video
         let thumbnailPath = '';
         try {
-          thumbnailPath = await generateThumbnail(
+          // Use the utility function to create thumbnail
+          const thumbnailResult = await createThumbnail(
             file.path, 
-            outputDir, 
+            uploadDir, 
             file.filename
           );
           
-          thumbnailPath = `${req.protocol}://${req.get('host')}${thumbnailPath}`;
+          if (thumbnailResult) {
+            // Get just the filename part from the result
+            const thumbnailFilename = path.basename(thumbnailResult);
+            thumbnailPath = `${baseUrl}/uploads/thumbnails/${thumbnailFilename}`;
+          }
         } catch (thumbErr) {
           console.error('Thumbnail generation error for batch file:', thumbErr);
           // Continue without thumbnail if generation fails
@@ -290,18 +273,21 @@ router.delete('/:id', async (req, res) => {
     // Extract the filename from the filePath
     const filePath = video.filePath;
     const fileName = filePath.split('/').pop();
-    const fullPath = path.join(process.env.UPLOAD_DIR || './uploads', fileName);
+    const uploadDir = process.env.UPLOAD_DIR || './uploads';
+    const fullPath = path.join(uploadDir, fileName);
 
     // Delete file from filesystem
     try {
-      await unlinkAsync(fullPath);
+      if (fs.existsSync(fullPath)) {
+        await unlinkAsync(fullPath);
+      }
       
       // Also delete thumbnail if it exists
       if (video.thumbnailPath) {
         const thumbnailFileName = video.thumbnailPath.split('/').pop();
         if (thumbnailFileName) {
           const thumbnailPath = path.join(
-            process.env.UPLOAD_DIR || './uploads', 
+            uploadDir, 
             'thumbnails', 
             thumbnailFileName
           );

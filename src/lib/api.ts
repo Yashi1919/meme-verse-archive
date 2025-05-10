@@ -2,7 +2,8 @@
 import axios from 'axios';
 import { VideoData } from "@/data/mockData";
 
-const API_URL = 'http://localhost:5000/api';
+// Default to localhost for development, can be overridden by environment variables
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 // Create axios instance
 const apiClient = axios.create({
@@ -245,6 +246,17 @@ export const api = {
     } catch (error) {
       console.error('Error deleting video from API:', error);
       throw error;
+    }
+  },
+  
+  // Health check - to verify server connectivity
+  checkHealth: async (): Promise<boolean> => {
+    try {
+      await apiClient.get('/health');
+      return true;
+    } catch (error) {
+      console.error('Server health check failed:', error);
+      return false;
     }
   }
 };
