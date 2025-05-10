@@ -58,8 +58,7 @@ const Search = () => {
           <h1 className="text-3xl font-bold mb-4 gradient-text">Search Memes</h1>
           <SearchBar
             onSearch={handleSearch}
-            initialValue={initialQuery}
-            placeholder="Search by title, movie, or tags..."
+            initialQuery={initialQuery}
             className="w-full max-w-lg"
           />
         </div>

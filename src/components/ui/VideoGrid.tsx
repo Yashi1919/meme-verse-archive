@@ -6,9 +6,23 @@ import VideoCard from "./VideoCard";
 interface VideoGridProps {
   videos: VideoData[];
   emptyMessage?: string;
+  isLoading?: boolean;
 }
 
-const VideoGrid: React.FC<VideoGridProps> = ({ videos, emptyMessage = "No videos found" }) => {
+const VideoGrid: React.FC<VideoGridProps> = ({ 
+  videos, 
+  emptyMessage = "No videos found", 
+  isLoading = false 
+}) => {
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16">
+        <div className="w-10 h-10 border-4 border-meme-primary border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-muted-foreground mt-4">Loading videos...</p>
+      </div>
+    );
+  }
+  
   if (!videos || videos.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16">

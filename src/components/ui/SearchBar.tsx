@@ -3,13 +3,21 @@ import React, { useState, FormEvent } from "react";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface SearchBarProps {
   onSearch: (query: string) => void;
   initialQuery?: string;
+  placeholder?: string;
+  className?: string;
 }
 
-const SearchBar: React.FC<SearchBarProps> = ({ onSearch, initialQuery = "" }) => {
+const SearchBar: React.FC<SearchBarProps> = ({
+  onSearch,
+  initialQuery = "",
+  placeholder = "Search memes by tags, movie names...",
+  className
+}) => {
   const [query, setQuery] = useState(initialQuery);
   
   const handleSubmit = (e: FormEvent) => {
@@ -18,11 +26,11 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearch, initialQuery = "" }) =>
   };
   
   return (
-    <form onSubmit={handleSubmit} className="w-full flex">
+    <form onSubmit={handleSubmit} className={cn("w-full flex", className)}>
       <div className="relative flex-1">
         <Input
           type="text"
-          placeholder="Search memes by tags, movie names..."
+          placeholder={placeholder}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="w-full pl-10 bg-secondary border-secondary"
