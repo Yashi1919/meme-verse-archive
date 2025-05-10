@@ -15,38 +15,63 @@ const Search = () => {
   
   const [query, setQuery] = useState(initialQuery);
   const [videos, setVideos] = useState<VideoData[]>([]);
+  const [allVideos, setAllVideos] = useState<VideoData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Search videos when query changes
+  // Fetch all videos once when component mounts
   useEffect(() => {
-    const fetchVideos = async () => {
+    const fetchAllVideos = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        let results;
+        const results = await api.getVideos();
+        setAllVideos(results);
+        
+        // Initialize videos based on the current query
         if (query.trim()) {
-          results = await api.searchVideos(query);
+          filterVideos(query, results);
         } else {
-          results = await api.getVideos();
+          setVideos(results);
         }
-        setVideos(results);
       } catch (err) {
-        console.error("Error searching videos:", err);
+        console.error("Error loading videos:", err);
         setError("Failed to load videos. Please try again.");
         setVideos([]);
+        setAllVideos([]);
       } finally {
         setIsLoading(false);
       }
     };
     
-    fetchVideos();
-  }, [query]);
+    fetchAllVideos();
+  }, []);
   
-  const handleSearch = (value: string) => {
-    setQuery(value);
+  // Filter videos client-side for dynamic filtering
+  const filterVideos = (searchQuery: string, videoList = allVideos) => {
+    if (!searchQuery.trim()) {
+      return videoList;
+    }
+    
+    const lowercaseQuery = searchQuery.toLowerCase();
+    const filtered = videoList.filter(video => 
+      video.title?.toLowerCase().includes(lowercaseQuery) || 
+      video.tags?.some(tag => tag.toLowerCase().includes(lowercaseQuery)) || 
+      video.movieName?.toLowerCase().includes(lowercaseQuery)
+    );
+    
+    return filtered;
+  };
+  
+  const handleSearch = (searchQuery: string) => {
+    setQuery(searchQuery);
+    
     // Update URL with search query
-    setSearchParams(value ? { q: value } : {});
+    setSearchParams(searchQuery ? { q: searchQuery } : {});
+    
+    // Filter videos client-side
+    const filteredVideos = filterVideos(searchQuery);
+    setVideos(filteredVideos);
   };
   
   return (
@@ -60,6 +85,8 @@ const Search = () => {
             onSearch={handleSearch}
             initialQuery={initialQuery}
             className="w-full max-w-lg"
+            dynamicSearch={true}
+            placeholder="Start typing to search memes..."
           />
         </div>
         
