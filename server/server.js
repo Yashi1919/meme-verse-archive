@@ -11,7 +11,7 @@ dotenv.config();
 
 const corsOptions = {
   origin: [
-    'https://meme-verse-archive-git-main-wallodynamos-projects.vercel.app/', // Your local frontend dev server
+    'https://meme-verse-archive.vercel.app', // Your local frontend dev server
     // Add any other origins you need to allow in the future (e.g., your deployed frontend URL)
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Common methods
