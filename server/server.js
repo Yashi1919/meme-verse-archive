@@ -9,6 +9,23 @@ const dotenv = require('dotenv');
 // Load environment variables
 dotenv.config();
 
+const corsOptions = {
+  origin: [
+    'http://localhost:8080', // Your local frontend dev server
+    // Add any other origins you need to allow in the future (e.g., your deployed frontend URL)
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Common methods
+  allowedHeaders: [
+    'Content-Type', // Allow standard content type header
+    'Authorization', // If you use authorization headers
+    'ngrok-skip-browser-warning' // <--- ADD THIS LINE
+  ],
+  credentials: true // Set to true if you ever use cookies/sessions that need to be sent cross-origin
+};
+
+
+
+
 // Import routes
 const videoRoutes = require('./routes/videos');
 
@@ -29,11 +46,8 @@ if (!fs.existsSync(thumbnailsDir)) {
 }
 
 // Middlewares
-app.use(cors({
-  origin: '*', // Allow any origin for development
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Serve static files from uploads directory

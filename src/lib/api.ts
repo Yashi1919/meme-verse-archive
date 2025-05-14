@@ -3,13 +3,14 @@ import axios from 'axios';
 import { VideoData } from "@/data/mockData";
 
 // Default to localhost for development, can be overridden by environment variables
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-
+const API_URL = import.meta.env.VITE_API_URL || 'https://e30e-103-210-1-72.ngrok-free.app/api';
+//const API_URL = "https://a254-103-210-1-106.ngrok-free.app/api"
 // Create axios instance
 const apiClient = axios.create({
   baseURL: API_URL,
   headers: {
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
+     'ngrok-skip-browser-warning': 'true'
   }
 });
 
